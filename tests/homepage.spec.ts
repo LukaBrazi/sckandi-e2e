@@ -1,24 +1,34 @@
 import { test, expect } from "@playwright/test";
+import { HomePage } from "../pages/HomePage";
 
 test.describe("Homepage", () => {
+  let homePage: HomePage;
+
+  test.beforeEach(async ({ page }) => {
+    homePage = new HomePage(page);
+    await homePage.goto();
+  });
+
   test("has correct page title", async ({ page }) => {
-    await page.goto("/");
     await expect(page).toHaveTitle(/Skandi Apartments/);
   });
 
-  test("displays hero heading", async ({ page }) => {
-    await page.goto("/");
-    const h1 = page.locator("h1");
-    await expect(h1).toBeVisible();
-    await expect(h1).toContainText("Apartments");
+  test("displays hero heading", async () => {
+    await expect(homePage.heroTitle).toBeVisible();
+    await expect(homePage.heroTitle).toContainText("Apartments");
   });
 
-  test("CTA button is visible and navigates to register", async ({ page }) => {
-    await page.goto("/");
-    // The CTA is a Link > button, so click the link
-    const cta = page.getByRole("link", { name: /Create Your Account/i });
-    await expect(cta).toBeVisible();
-    await cta.click();
+  test("CTA link is visible", async () => {
+    await expect(homePage.ctaLink).toBeVisible();
+  });
+
+  test("CTA navigates to register page", async ({ page }) => {
+    await homePage.ctaLink.click();
     await expect(page).toHaveURL(/\/register/);
+  });
+
+  test("page returns HTTP 200", async ({ page }) => {
+    const response = await page.goto("/");
+    expect(response?.status()).toBeLessThan(400);
   });
 });
