@@ -25,7 +25,8 @@ authTest.describe("Tenants page — staff (dispatcher)", () => {
   });
 
   authTest("table has data rows from seed", async () => {
-    // seed creates 6+ users, so expect at least 1 visible row
+    // Wait for API data to load before counting
+    await tenantsPage.tableRows.first().waitFor({ state: "visible", timeout: 10_000 });
     const count = await tenantsPage.tableRows.count();
     authTest.expect(count).toBeGreaterThan(0);
   });
