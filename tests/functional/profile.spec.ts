@@ -17,8 +17,7 @@ authTest.describe("Profile page — authenticated user", () => {
   });
 
   authTest("page content is visible", async ({ staffPage }) => {
-    // At minimum the page renders something
-    const body = staffPage.locator("main, body");
-    await expect(body).toBeVisible();
+    // Tab labels are always rendered on the profile page
+    await expect(staffPage.getByText("Про мене")).toBeVisible({ timeout: 10_000 });
   });
 });

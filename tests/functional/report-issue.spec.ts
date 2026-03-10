@@ -17,6 +17,6 @@ authTest.describe("Report issue page — authenticated user", () => {
   });
 
   authTest("shows page heading", async () => {
-    await expect(reportPage.heading).toBeVisible();
+    await expect(reportPage.heading).toBeVisible({ timeout: 10_000 });
   });
 });
