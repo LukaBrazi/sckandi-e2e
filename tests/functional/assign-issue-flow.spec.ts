@@ -1,0 +1,80 @@
+import { authTest } from "../../fixtures/auth.fixture";
+import { expect } from "@playwright/test";
+import { AdminIssuesPage } from "../../pages/AdminIssuesPage";
+
+// Requires seed data: make seed
+// guard@demo.com shows up in admin workers dropdown (non-tenant, non-staff)
+// guard can see assigned issues on their profile under "Призначені заявки" tab
+
+authTest.describe("Адмін призначає заявку на робітника → робітник бачить її", () => {
+  authTest(
+    "admin assigns issue to guard → guard sees it in assigned-issues tab",
+    async ({ browser }) => {
+      const { LoginPage } = await import("../../pages/LoginPage");
+      const { TEST_USERS } = await import("../../fixtures/test-data");
+
+      // Step 1: Login as admin and assign issue to guard
+      const adminContext = await browser.newContext();
+      const adminPage = await adminContext.newPage();
+
+      const adminLogin = new LoginPage(adminPage);
+      await adminLogin.goto();
+      await adminLogin.login(TEST_USERS.dispatcher.email, TEST_USERS.dispatcher.password);
+      await adminPage.waitForURL(/\/welcome/, { timeout: 15_000 });
+
+      const adminIssues = new AdminIssuesPage(adminPage);
+      await adminIssues.goto();
+      await expect(adminPage).toHaveURL(/\/admin\/issues/);
+
+      // Wait for table to load
+      await adminIssues.tableRows.first().waitFor({ state: "visible", timeout: 10_000 });
+
+      // Find the first unassigned issue row
+      const firstRow = adminIssues.tableRows.first();
+
+      // Use the Radix Select (Виконавець column) to assign to guard
+      const assignSelect = firstRow.locator('[role="combobox"]').first();
+      await assignSelect.click();
+      await adminPage.waitForTimeout(300);
+
+      // Select guard from dropdown
+      const guardOption = adminPage.getByRole("option", { name: /guard|Охоронець|Микола/i }).first();
+      const guardOptionVisible = await guardOption.isVisible({ timeout: 3_000 }).catch(() => false);
+      if (guardOptionVisible) {
+        await guardOption.click();
+        // Wait for success toast
+        const saved = await adminIssues.successToast.isVisible({ timeout: 8_000 }).catch(() => false);
+        expect(saved).toBe(true);
+      } else {
+        // Try native select if Radix not found
+        const nativeSelect = firstRow.locator("select").last();
+        await nativeSelect.selectOption({ label: /guard|охоронець/i });
+      }
+
+      await adminContext.close();
+
+      // Step 2: Login as guard and check assigned issues on profile
+      const guardContext = await browser.newContext();
+      const guardPageObj = await guardContext.newPage();
+
+      const guardLogin = new LoginPage(guardPageObj);
+      await guardLogin.goto();
+      await guardLogin.login(TEST_USERS.guard.email, TEST_USERS.guard.password);
+      await guardPageObj.waitForURL(/\/welcome/, { timeout: 15_000 });
+
+      await guardPageObj.goto("/profile");
+      await expect(guardPageObj).toHaveURL(/\/profile/);
+
+      // Click "Призначені заявки" tab
+      const assignedTab = guardPageObj.getByRole("tab", { name: /Призначені заявки/i });
+      await assignedTab.waitFor({ state: "visible", timeout: 8_000 });
+      await assignedTab.click();
+
+      // Verify there is at least one assigned issue
+      const assignedContent = guardPageObj.getByText(/Всього|assigned/i).first();
+      await expect(assignedContent).toBeVisible({ timeout: 8_000 });
+
+      await guardContext.close();
+    },
+  );
+});

@@ -5,6 +5,8 @@ import { TEST_USERS } from "./test-data";
 type AuthFixtures = {
   staffPage: Page;
   tenantPage: Page;
+  guardPage: Page;
+  resident1Page: Page;
 };
 
 async function loginAs(
@@ -33,6 +35,24 @@ export const authTest = base.extend<AuthFixtures>({
       page,
       TEST_USERS.tenant.email,
       TEST_USERS.tenant.password,
+    );
+    await use(page);
+  },
+
+  guardPage: async ({ page }, use) => {
+    await loginAs(
+      page,
+      TEST_USERS.guard.email,
+      TEST_USERS.guard.password,
+    );
+    await use(page);
+  },
+
+  resident1Page: async ({ page }, use) => {
+    await loginAs(
+      page,
+      TEST_USERS.resident1.email,
+      TEST_USERS.resident1.password,
     );
     await use(page);
   },
