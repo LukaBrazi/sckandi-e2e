@@ -11,7 +11,7 @@ export class AdminWorkersPage extends BasePage {
   }
 
   get heading() {
-    return this.page.getByText(/Майстри та персонал/i).first();
+    return this.page.getByText(/Працівники/i).first();
   }
 
   get addButton() {

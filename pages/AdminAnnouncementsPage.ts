@@ -11,7 +11,7 @@ export class AdminAnnouncementsPage extends BasePage {
   }
 
   get heading() {
-    return this.page.getByText(/Новини та оголошення/i).first();
+    return this.page.getByText(/Новини/i).first();
   }
 
   get addButton() {
@@ -19,15 +19,16 @@ export class AdminAnnouncementsPage extends BasePage {
   }
 
   get titleInput() {
-    return this.page.locator('input[placeholder="Заголовок новини..."]');
+    return this.page.locator('input[placeholder="Заголовок оголошення"]');
   }
 
   get bodyTextarea() {
-    return this.page.locator('textarea[placeholder="Текст новини..."]');
+    return this.page.locator('textarea[placeholder="Текст оголошення..."]');
   }
 
-  get buildingSelect() {
-    return this.page.locator("select").first();
+  /** Shadcn Select trigger for building inside the Dialog */
+  get buildingTrigger() {
+    return this.page.locator('[role="combobox"]').first();
   }
 
   get saveButton() {
@@ -38,8 +39,19 @@ export class AdminAnnouncementsPage extends BasePage {
     return this.page.getByText(title, { exact: false });
   }
 
+  /** Select the first available building from the Shadcn Select dropdown */
+  async selectFirstBuilding() {
+    await this.buildingTrigger.click();
+    await this.page.waitForTimeout(300);
+    const firstOption = this.page.locator('[role="option"]').first();
+    await firstOption.waitFor({ state: "visible", timeout: 5_000 });
+    await firstOption.click();
+  }
+
   async createAnnouncement(title: string, body: string) {
     await this.addButton.click();
+    await this.page.waitForTimeout(500);
+    await this.selectFirstBuilding();
     await this.titleInput.fill(title);
     await this.bodyTextarea.fill(body);
     await this.saveButton.click();

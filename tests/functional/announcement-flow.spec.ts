@@ -21,7 +21,10 @@ authTest.describe("Адмін створює новину → відобража
       await adminPosts.addButton.click();
       await staffPage.waitForTimeout(800);
 
-      // Fill announcement data (building is auto-selected from seed)
+      // Select the first available building from the Shadcn Select dropdown
+      await adminPosts.selectFirstBuilding();
+
+      // Fill announcement data
       await adminPosts.titleInput.fill(announcementTitle);
       await adminPosts.bodyTextarea.fill("Текст тестового оголошення для E2E перевірки.");
 

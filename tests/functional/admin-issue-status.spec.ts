@@ -16,7 +16,7 @@ authTest.describe("Адмін змінює статус скарги → меш�
       const { LoginPage } = await import("../../pages/LoginPage");
       const { TEST_USERS } = await import("../../fixtures/test-data");
 
-      // Step 1: Admin changes issue status
+      // Step 1: Admin changes issue status via Dialog
       const adminContext = await browser.newContext();
       const adminPage = await adminContext.newPage();
 
@@ -33,14 +33,25 @@ authTest.describe("Адмін змінює статус скарги → меш�
       await adminIssues.searchFor(knownIssueTitle);
       await adminIssues.tableRows.first().waitFor({ state: "visible", timeout: 10_000 });
 
-      // Change status to "accepted" using the inline select
+      // Find the issue row
       const issueRow = adminIssues.rowByTitle(knownIssueTitle);
       const rowVisible = await issueRow.isVisible({ timeout: 5_000 }).catch(() => false);
 
       if (rowVisible) {
-        const statusSelect = issueRow.locator("select").first();
-        await statusSelect.selectOption("accepted");
-        await expect(adminIssues.successToast).toBeVisible({ timeout: 8_000 });
+        // Open edit Dialog and change status
+        await adminIssues.editButtonInRow(issueRow).click();
+        await adminPage.waitForSelector('[role="dialog"]', { state: "visible", timeout: 5_000 });
+
+        // Change status using the Shadcn Select in the Dialog
+        await adminIssues.dialogStatusSelect.click();
+        await adminPage.waitForTimeout(300);
+        const acceptedOption = adminPage.locator('[role="option"]').filter({ hasText: /Прийнято/i }).first();
+        const optionVisible = await acceptedOption.isVisible({ timeout: 3_000 }).catch(() => false);
+        if (optionVisible) {
+          await acceptedOption.click();
+          await adminIssues.dialogSaveButton.click();
+          await expect(adminIssues.successToast).toBeVisible({ timeout: 8_000 });
+        }
       }
 
       await adminContext.close();

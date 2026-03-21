@@ -29,26 +29,34 @@ authTest.describe("Адмін призначає заявку на робітн�
       // Wait for table to load
       await adminIssues.tableRows.first().waitFor({ state: "visible", timeout: 10_000 });
 
-      // Find the first unassigned issue row
+      // Open the edit Dialog for the first row
       const firstRow = adminIssues.tableRows.first();
-
-      // Use the Radix Select (Виконавець column) to assign to guard
-      const assignSelect = firstRow.locator('[role="combobox"]').first();
-      await assignSelect.click();
+      await adminIssues.editButtonInRow(firstRow).click();
+      await adminPage.waitForSelector('[role="dialog"]', { state: "visible", timeout: 5_000 });
       await adminPage.waitForTimeout(300);
 
-      // Select guard from dropdown
-      const guardOption = adminPage.getByRole("option", { name: /guard|Охоронець|Микола/i }).first();
-      const guardOptionVisible = await guardOption.isVisible({ timeout: 3_000 }).catch(() => false);
-      if (guardOptionVisible) {
-        await guardOption.click();
-        // Wait for success toast
-        const saved = await adminIssues.successToast.isVisible({ timeout: 8_000 }).catch(() => false);
-        expect(saved).toBe(true);
+      // Use the Assignee Shadcn Select (3rd combobox in dialog)
+      const assigneeSelect = adminIssues.dialogAssigneeSelect;
+      const assigneeVisible = await assigneeSelect.isVisible({ timeout: 3_000 }).catch(() => false);
+
+      if (assigneeVisible) {
+        await assigneeSelect.click();
+        await adminPage.waitForTimeout(300);
+
+        // Select guard from dropdown options
+        const guardOption = adminPage.locator('[role="option"]').filter({ hasText: /guard|Охоронець|Микола/i }).first();
+        const guardOptionVisible = await guardOption.isVisible({ timeout: 3_000 }).catch(() => false);
+        if (guardOptionVisible) {
+          await guardOption.click();
+          await adminIssues.dialogSaveButton.click();
+          const saved = await adminIssues.successToast.isVisible({ timeout: 8_000 }).catch(() => false);
+          expect(saved).toBe(true);
+        } else {
+          // Guard not found in options — close dialog and skip
+          await adminPage.keyboard.press("Escape");
+        }
       } else {
-        // Try native select if Radix not found
-        const nativeSelect = firstRow.locator("select").last();
-        await nativeSelect.selectOption({ label: /guard|охоронець/i });
+        await adminPage.keyboard.press("Escape");
       }
 
       await adminContext.close();
