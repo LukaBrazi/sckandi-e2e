@@ -26,9 +26,12 @@ export class AddPostPage extends BasePage {
     return this.page.getByRole("button", { name: /Опублікувати/i });
   }
 
-  async fillAndSubmit(title: string, body: string) {
+  async fillAndSubmit(title: string, body: string, tag = "e2e-тест") {
     await this.titleInput.fill(title);
     await this.bodyTextarea.fill(body);
+    // Tags input requires pressing Enter to add each tag
+    await this.tagsInput.fill(tag);
+    await this.tagsInput.press("Enter");
     await this.submitButton.click();
   }
 }

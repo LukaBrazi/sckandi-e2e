@@ -37,14 +37,16 @@ authTest.describe("Адмін створює мешканця → мешкане
       // Expect success toast
       await expect(residentsPage.successToast).toBeVisible({ timeout: 8_000 });
 
-      // Wait for table to refresh and verify new row
-      await staffPage.waitForTimeout(1_000);
-      const newCount = await residentsPage.tableRows.count();
-      expect(newCount).toBeGreaterThan(initialCount);
-
-      // Verify the created resident appears by name
-      const residentEntry = residentsPage.residentInList(newResident.firstName);
+      // Wait for the new resident to appear in the list (use full name to avoid strict-mode clash)
+      const residentEntry = residentsPage.residentInList(
+        `${newResident.firstName} ${newResident.lastName}`,
+      );
       await expect(residentEntry).toBeVisible({ timeout: 10_000 });
+
+      // Verify row count is not less than initial (pagination may cap display at 10)
+      await staffPage.waitForTimeout(500);
+      const newCount = await residentsPage.tableRows.count();
+      expect(newCount).toBeGreaterThanOrEqual(initialCount);
     },
   );
 });

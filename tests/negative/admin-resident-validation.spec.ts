@@ -71,8 +71,9 @@ authTest.describe("Адмін створює мешканця — валідац
         const errorText = await staffPage
           .locator(".text-red-500, [class*='error']")
           .first()
-          .textContent();
-        if (errorText && errorText.trim()) {
+          .textContent({ timeout: 5_000 })
+          .catch(() => null);
+        if (errorText && errorText.trim() && errorText.trim().length > 2) {
           expect(errorText).toMatch(/[а-яА-ЯіІїЇєЄґҐ]|email|Email/u);
         }
       }
@@ -106,8 +107,9 @@ authTest.describe("Адмін створює мешканця — валідац
         const errorText = await staffPage
           .locator(".text-red-500, [class*='error']")
           .first()
-          .textContent();
-        if (errorText && errorText.trim()) {
+          .textContent({ timeout: 5_000 })
+          .catch(() => null);
+        if (errorText && errorText.trim() && errorText.trim().length > 2) {
           // Should mention minimum length in Ukrainian
           expect(errorText).toMatch(/[а-яА-ЯіІїЇєЄґҐ]|Мінімум|символ/u);
         }

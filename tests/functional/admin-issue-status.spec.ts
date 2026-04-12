@@ -43,12 +43,26 @@ authTest.describe("Адмін змінює статус скарги → меш�
         await adminPage.waitForSelector('[role="dialog"]', { state: "visible", timeout: 5_000 });
 
         // Change status using the Shadcn Select in the Dialog
+        // The dialog has 3 comboboxes: status (0), priority (1), assignee (2)
+        // Use adminIssues.dialogStatusSelect which is nth(0)
         await adminIssues.dialogStatusSelect.click();
-        await adminPage.waitForTimeout(300);
-        const acceptedOption = adminPage.locator('[role="option"]').filter({ hasText: /Прийнято/i }).first();
-        const optionVisible = await acceptedOption.isVisible({ timeout: 3_000 }).catch(() => false);
+        await adminPage.waitForTimeout(500);
+
+        // Wait for dropdown to open and find the "Прийнято" option
+        const acceptedOption = adminPage
+          .locator('[role="option"]')
+          .filter({ hasText: /Прийнято/ })
+          .first();
+
+        const optionVisible = await acceptedOption
+          .isVisible({ timeout: 5_000 })
+          .catch(() => false);
+
         if (optionVisible) {
           await acceptedOption.click();
+          await adminPage.waitForTimeout(300);
+          // Ensure dialog save button is visible and click it
+          await expect(adminIssues.dialogSaveButton).toBeVisible({ timeout: 3_000 });
           await adminIssues.dialogSaveButton.click();
           await expect(adminIssues.successToast).toBeVisible({ timeout: 8_000 });
         }
@@ -87,19 +101,18 @@ authTest.describe("Адмін змінює статус скарги → меш�
       const { TEST_USERS } = await import("../../fixtures/test-data");
 
       // Get admin token
-      const tokenRes = await request.post("/api/v1/auth/jwt/create/", {
+      const tokenRes = await request.post("/api/v1/auth/login/", {
         data: {
           email: TEST_USERS.dispatcher.email,
           password: TEST_USERS.dispatcher.password,
         },
       });
       expect(tokenRes.ok()).toBeTruthy();
-      const { access } = await tokenRes.json();
+      // Login sets cookies — use cookie-based auth for subsequent requests
+      // (CustomTokenObtainPairAPIView removes tokens from JSON, sets them as cookies)
 
       // Fetch issues list and find one to update
-      const issuesRes = await request.get("/api/v1/issues/", {
-        headers: { Authorization: `Bearer ${access}` },
-      });
+      const issuesRes = await request.get("/api/v1/issues/");
       expect(issuesRes.ok()).toBeTruthy();
       const data = await issuesRes.json();
       const issues: Array<{ id: string; status: string }> = data.issues?.results ?? data.results ?? [];
@@ -111,7 +124,6 @@ authTest.describe("Адмін змінює статус скарги → меш�
       const updateRes = await request.patch(
         `/api/v1/issues/admin/update/${targetIssue.id}/`,
         {
-          headers: { Authorization: `Bearer ${access}` },
           data: { status: "accepted" },
         },
       );

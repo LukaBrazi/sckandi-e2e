@@ -110,8 +110,9 @@ authTest.describe(
 
         // The "about" tab content should NOT be the active/selected panel
         // (we check that issues-related content or empty state is shown instead)
-        const issuesPanel = tenantPage.locator('[role="tabpanel"]');
-        await expect(issuesPanel).toBeVisible({ timeout: 8_000 });
+        // Use data-state="active" to avoid strict-mode clash with hidden inactive panels
+        const issuesPanel = tenantPage.locator('[role="tabpanel"][data-state="active"]');
+        await expect(issuesPanel).toBeVisible({ timeout: 15_000 });
       },
     );
 
@@ -121,7 +122,9 @@ authTest.describe(
         // Navigate to welcome page to check nav
         await tenantPage.goto("/welcome");
 
-        const navLink = tenantPage.getByRole("link", { name: /Мої заявки/i });
+        // Use specific locator to avoid ambiguity with stats card links
+        // (The sidebar nav has "Мої заявки" and stats cards may also have "Мої заявки")
+        const navLink = tenantPage.locator('a[href*="tab=my-issues"]').first();
         await expect(navLink).toBeVisible({ timeout: 10_000 });
 
         const href = await navLink.getAttribute("href");

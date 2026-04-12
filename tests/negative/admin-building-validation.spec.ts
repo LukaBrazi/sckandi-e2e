@@ -81,16 +81,16 @@ authTest.describe("Адмін створює будівлю — валідаці
     "non-staff user cannot create building — 403",
     async ({ request }) => {
       const { TEST_USERS } = await import("../../fixtures/test-data");
-      const tokenRes = await request.post("/api/v1/auth/jwt/create/", {
+      const tokenRes = await request.post("/api/v1/auth/login/", {
         data: {
           email: TEST_USERS.tenant.email,
           password: TEST_USERS.tenant.password,
         },
       });
-      const { access } = await tokenRes.json();
+      // Cookie-based auth — token set as cookie, not in JSON body
 
-      const res = await request.post("/api/v1/apartments/buildings/create/", {
-        headers: { Authorization: `Bearer ${access}` },
+      // Use the admin endpoint for creating buildings (same as GET uses /admin/)
+      const res = await request.post("/api/v1/apartments/buildings/admin/", {
         data: { name: "Test", address: "Test", city: "Kyiv", is_active: true },
       });
       expect([403, 401]).toContain(res.status());

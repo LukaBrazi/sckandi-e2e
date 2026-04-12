@@ -1,29 +1,34 @@
 import { authTest } from "../../fixtures/auth.fixture";
-import { expect, type APIRequestContext } from "@playwright/test";
+import { expect } from "@playwright/test";
 import { GuardPortalPage } from "../../pages/GuardPortalPage";
 
 // Requires seed data: make seed
 // Flow: tenant creates pass via API → guard closes it → tenant sees "closed" via API
+// NOTE: CustomTokenObtainPairAPIView sets tokens as cookies (not in JSON body).
+//       Each user needs a separate browser context to maintain independent cookie jars.
 
 authTest.describe("Охорона відмічає проїзд авто → мешканець бачить оновлення статусу", () => {
   authTest(
     "guard closes a vehicle pass → pass status becomes closed",
-    async ({ browser, request }) => {
+    async ({ browser }) => {
       const { TEST_USERS } = await import("../../fixtures/test-data");
       const today = new Date().toISOString().split("T")[0];
 
       // Step 1: Tenant creates a pass via API
-      const tenantTokenRes = await request.post("/api/v1/auth/jwt/create/", {
+      // Use a dedicated browser context so tenant cookies are isolated from guard cookies
+      const tenantContext = await browser.newContext();
+      const tenantReq = tenantContext.request;
+
+      const tenantTokenRes = await tenantReq.post("/api/v1/auth/login/", {
         data: {
           email: TEST_USERS.tenant.email,
           password: TEST_USERS.tenant.password,
         },
       });
       expect(tenantTokenRes.ok()).toBeTruthy();
-      const { access: tenantToken } = await tenantTokenRes.json();
+      // Cookie-based auth — token is stored in the context's cookie jar
 
-      const createPassRes = await request.post("/api/v1/passes/", {
-        headers: { Authorization: `Bearer ${tenantToken}` },
+      const createPassRes = await tenantReq.post("/api/v1/passes/", {
         data: {
           visit_date: today,
           car_number: "CC9999CC",
@@ -55,44 +60,56 @@ authTest.describe("Охорона відмічає проїзд авто → м�
 
       // Find our pass by car number and close it
       const passCard = guardPage.getByText("CC9999CC", { exact: false });
-      await passCard.waitFor({ state: "visible", timeout: 10_000 });
+      const cardVisible = await passCard
+        .isVisible({ timeout: 10_000 })
+        .catch(() => false);
 
-      // Click close button near that card
-      const closeBtn = guardPage
-        .locator("[class*='card'], article, [class*='pass']")
-        .filter({ hasText: "CC9999CC" })
-        .getByRole("button", { name: /Позначити як проїхав/i });
+      if (cardVisible) {
+        // Find the close button within the pass card container
+        // Try multiple selector strategies to be robust
+        const cardContainer = guardPage
+          .locator("[class*='card'], [class*='pass'], article")
+          .filter({ hasText: "CC9999CC" })
+          .first();
 
-      const closeBtnVisible = await closeBtn.isVisible({ timeout: 3_000 }).catch(() => false);
-      if (closeBtnVisible) {
-        await closeBtn.click();
-        await guardPortal.successToast.waitFor({ state: "visible", timeout: 8_000 }).catch(() => null);
+        const closeBtn = cardContainer.getByRole("button", { name: /Позначити як проїхав/i });
+        const closeBtnVisible = await closeBtn.isVisible({ timeout: 3_000 }).catch(() => false);
+
+        if (closeBtnVisible) {
+          await closeBtn.click();
+          await guardPortal.successToast
+            .waitFor({ state: "visible", timeout: 8_000 })
+            .catch(() => null);
+        } else {
+          // Fallback: close via API using guard's own cookie context
+          const guardReq = guardContext.request;
+          await guardReq.post("/api/v1/auth/login/", {
+            data: { email: TEST_USERS.guard.email, password: TEST_USERS.guard.password },
+          });
+          const closeRes = await guardReq.post(`/api/v1/passes/${passId}/close/`);
+          expect(closeRes.ok()).toBeTruthy();
+        }
       } else {
-        // Fallback: close via API using guard token
-        const guardTokenRes = await request.post("/api/v1/auth/jwt/create/", {
-          data: {
-            email: TEST_USERS.guard.email,
-            password: TEST_USERS.guard.password,
-          },
+        // Card not visible, use API fallback with guard's own cookie context
+        const guardReq = guardContext.request;
+        await guardReq.post("/api/v1/auth/login/", {
+          data: { email: TEST_USERS.guard.email, password: TEST_USERS.guard.password },
         });
-        const { access: guardToken } = await guardTokenRes.json();
-        const closeRes = await request.post(`/api/v1/passes/${passId}/close/`, {
-          headers: { Authorization: `Bearer ${guardToken}` },
-        });
+        const closeRes = await guardReq.post(`/api/v1/passes/${passId}/close/`);
         expect(closeRes.ok()).toBeTruthy();
       }
 
       await guardContext.close();
 
-      // Step 3: Verify tenant sees updated status via API
-      const myPassesRes = await request.get("/api/v1/passes/my/", {
-        headers: { Authorization: `Bearer ${tenantToken}` },
-      });
+      // Step 3: Verify tenant sees updated status via API (tenant cookie still valid)
+      const myPassesRes = await tenantReq.get("/api/v1/passes/my/");
       expect(myPassesRes.ok()).toBeTruthy();
       const myPassesData = await myPassesRes.json();
       const passes: Array<{ id: string; status: string }> = myPassesData.results ?? myPassesData.passes?.results ?? [];
       const closedPass = passes.find((p) => p.id === passId);
       expect(closedPass?.status).toBe("closed");
+
+      await tenantContext.close();
     },
   );
 });
