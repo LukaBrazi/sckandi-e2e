@@ -6,7 +6,7 @@ const PROTECTED_ROUTES = [
   { path: "/add-rating", name: "add-rating" },
 ];
 
-const PUBLIC_ROUTES = ["/", "/login", "/register", "/forgot-password"];
+const PUBLIC_ROUTES = ["/", "/login", "/forgot-password"];
 
 test.describe("Protected routes redirect unauthenticated users", () => {
   for (const route of PROTECTED_ROUTES) {

@@ -1,7 +1,7 @@
 {
   "name": "sckandi-e2e",
   "version": "1.0.0",
-  "description": "Playwright E2E tests for Skandi Apartments",
+  "description": "Playwright E2E tests for ApartmentOS",
   "scripts": {
     "test": "playwright test",
     "test:headed": "playwright test --headed",
