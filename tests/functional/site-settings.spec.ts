@@ -20,24 +20,24 @@ test.describe("SiteSettings API — публічний ендпоінт", () => 
     expect(res.status()).toBe(200);
 
     const data = await res.json();
-    // Response must contain settings and contacts
-    expect(data).toHaveProperty("settings");
-    expect(data).toHaveProperty("contacts");
+    // Response must contain settings and contacts (wrapped under site_settings key)
+    expect(data.site_settings).toHaveProperty("settings");
+    expect(data.site_settings).toHaveProperty("contacts");
   });
 
   test("settings містить platform_name", async ({ request }) => {
     const res = await request.get("/api/v1/site-settings/");
     const data = await res.json();
 
-    expect(data.settings).toHaveProperty("platform_name");
-    expect(typeof data.settings.platform_name).toBe("string");
-    expect(data.settings.platform_name.length).toBeGreaterThan(0);
+    expect(data.site_settings.settings).toHaveProperty("platform_name");
+    expect(typeof data.site_settings.settings.platform_name).toBe("string");
+    expect(data.site_settings.settings.platform_name.length).toBeGreaterThan(0);
   });
 
   test("settings містить hero section поля", async ({ request }) => {
     const res = await request.get("/api/v1/site-settings/");
     const data = await res.json();
-    const s = data.settings;
+    const s = data.site_settings.settings;
 
     // Hero section fields
     expect(s).toHaveProperty("hero_title");
@@ -55,7 +55,7 @@ test.describe("SiteSettings API — публічний ендпоінт", () => 
   test("settings містить branding поля", async ({ request }) => {
     const res = await request.get("/api/v1/site-settings/");
     const data = await res.json();
-    const s = data.settings;
+    const s = data.site_settings.settings;
 
     // Platform branding
     expect(s).toHaveProperty("platform_tagline");
@@ -68,7 +68,7 @@ test.describe("SiteSettings API — публічний ендпоінт", () => 
   test("settings містить support/contact інформацію", async ({ request }) => {
     const res = await request.get("/api/v1/site-settings/");
     const data = await res.json();
-    const s = data.settings;
+    const s = data.site_settings.settings;
 
     // Contact info
     expect(s).toHaveProperty("support_email");
@@ -81,7 +81,7 @@ test.describe("SiteSettings API — публічний ендпоінт", () => 
   test("settings містить complex інформацію", async ({ request }) => {
     const res = await request.get("/api/v1/site-settings/");
     const data = await res.json();
-    const s = data.settings;
+    const s = data.site_settings.settings;
 
     // Complex identity
     expect(s).toHaveProperty("display_complex_name");
@@ -92,7 +92,7 @@ test.describe("SiteSettings API — публічний ендпоінт", () => 
   test("settings містить footer та legal посилання", async ({ request }) => {
     const res = await request.get("/api/v1/site-settings/");
     const data = await res.json();
-    const s = data.settings;
+    const s = data.site_settings.settings;
 
     // Footer & Legal
     expect(s).toHaveProperty("footer_text");
@@ -103,7 +103,7 @@ test.describe("SiteSettings API — публічний ендпоінт", () => 
   test("settings містить SEO meta тегів", async ({ request }) => {
     const res = await request.get("/api/v1/site-settings/");
     const data = await res.json();
-    const s = data.settings;
+    const s = data.site_settings.settings;
 
     // SEO fields
     expect(s).toHaveProperty("meta_title");
@@ -113,7 +113,7 @@ test.describe("SiteSettings API — публічний ендпоінт", () => 
   test("settings містить links масив", async ({ request }) => {
     const res = await request.get("/api/v1/site-settings/");
     const data = await res.json();
-    const s = data.settings;
+    const s = data.site_settings.settings;
 
     expect(s).toHaveProperty("links");
     expect(Array.isArray(s.links)).toBe(true);
@@ -123,13 +123,13 @@ test.describe("SiteSettings API — публічний ендпоінт", () => 
     const res = await request.get("/api/v1/site-settings/");
     const data = await res.json();
 
-    expect(Array.isArray(data.contacts)).toBe(true);
+    expect(Array.isArray(data.site_settings.contacts)).toBe(true);
   });
 
   test("contacts містять активні контакти тільки", async ({ request }) => {
     const res = await request.get("/api/v1/site-settings/");
     const data = await res.json();
-    const contacts = data.contacts;
+    const contacts = data.site_settings.contacts;
 
     // Each contact should have required fields
     contacts.forEach((contact: any) => {
@@ -144,7 +144,7 @@ test.describe("SiteSettings API — публічний ендпоінт", () => 
   test("contacts цілковито упорядковані", async ({ request }) => {
     const res = await request.get("/api/v1/site-settings/");
     const data = await res.json();
-    const contacts = data.contacts;
+    const contacts = data.site_settings.contacts;
 
     // Should be ordered by 'order' and 'name' fields
     contacts.forEach((contact: any) => {
@@ -156,7 +156,7 @@ test.describe("SiteSettings API — публічний ендпоінт", () => 
   test("contact містить role_display для UI", async ({ request }) => {
     const res = await request.get("/api/v1/site-settings/");
     const data = await res.json();
-    const contacts = data.contacts;
+    const contacts = data.site_settings.contacts;
 
     if (contacts.length > 0) {
       const contact = contacts[0];
@@ -343,13 +343,13 @@ test.describe("SiteSettings API — resilience", () => {
 
     // Same keys should exist in both responses
     expect(Object.keys(data1).sort()).toEqual(Object.keys(data2).sort());
-    expect(Object.keys(data1.settings).sort()).toEqual(Object.keys(data2.settings).sort());
+    expect(Object.keys(data1.site_settings.settings).sort()).toEqual(Object.keys(data2.site_settings.settings).sort());
   });
 
   test("hero_image_url може бути null без crash", async ({ request }) => {
     const res = await request.get("/api/v1/site-settings/");
     const data = await res.json();
-    const s = data.settings;
+    const s = data.site_settings.settings;
 
     // hero_image_url might be null (image not set)
     expect(s.hero_image_url === null || typeof s.hero_image_url === "string").toBe(true);
@@ -358,7 +358,7 @@ test.describe("SiteSettings API — resilience", () => {
   test("logo_url і favicon_url може бути порожні рядки", async ({ request }) => {
     const res = await request.get("/api/v1/site-settings/");
     const data = await res.json();
-    const s = data.settings;
+    const s = data.site_settings.settings;
 
     // These fields can be empty strings
     expect(typeof s.logo_url).toBe("string");
@@ -368,7 +368,7 @@ test.describe("SiteSettings API — resilience", () => {
   test("support контакти можуть бути порожні", async ({ request }) => {
     const res = await request.get("/api/v1/site-settings/");
     const data = await res.json();
-    const s = data.settings;
+    const s = data.site_settings.settings;
 
     // These can be empty (optional)
     expect(s.support_email === "" || typeof s.support_email === "string").toBe(true);
@@ -379,9 +379,9 @@ test.describe("SiteSettings API — resilience", () => {
     const res = await request.get("/api/v1/site-settings/");
     const data = await res.json();
 
-    expect(Array.isArray(data.contacts)).toBe(true);
+    expect(Array.isArray(data.site_settings.contacts)).toBe(true);
     // contacts can be empty array
-    expect(data.contacts.length >= 0).toBe(true);
+    expect(data.site_settings.contacts.length >= 0).toBe(true);
   });
 
   test("API не повертає sensitive інформацію", async ({ request }) => {
