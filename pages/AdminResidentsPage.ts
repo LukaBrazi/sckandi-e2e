@@ -47,7 +47,7 @@ export class AdminResidentsPage extends BasePage {
   }
 
   residentInList(name: string) {
-    return this.page.getByText(name, { exact: false });
+    return this.page.locator("table tbody tr").filter({ hasText: name }).first();
   }
 
   get tableSearchInput() {
