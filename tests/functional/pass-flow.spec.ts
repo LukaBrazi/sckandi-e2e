@@ -44,8 +44,9 @@ authTest.describe("Мешканець створює пропуск → охор
       const success = await requestPassPage.successToast
         .isVisible({ timeout: 10_000 })
         .catch(() => false);
+      // Client-side router.push — no "load" event, use "commit"
       const redirected = await tenantPage
-        .waitForURL(/\/profile/, { timeout: 10_000 })
+        .waitForURL(/\/profile/, { timeout: 10_000, waitUntil: "commit" })
         .then(() => true)
         .catch(() => false);
       expect(success || redirected).toBe(true);

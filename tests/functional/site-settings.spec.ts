@@ -248,21 +248,22 @@ test.describe("Homepage branding — бренд зі SiteSettings", () => {
     await expect(hero).toBeVisible({ timeout: 10_000 });
   });
 
-  test("homepage не містить raw 'undefined' у контенті", async ({ page }) => {
+  test("homepage не містить raw 'undefined' у видимому контенті", async ({ page }) => {
     await page.goto("/");
     await page.waitForLoadState("networkidle");
-    const bodyText = await page.locator("body").textContent();
-    expect(bodyText).not.toContain("undefined");
+    // Use innerText on <main> (excludes <script>/<style>). Next.js 14 RSC
+    // serializes `$undefined` tokens inside inline <script> tags — those must
+    // not count as "visible content".
+    const mainText = await page.locator("main").innerText();
+    expect(mainText).not.toContain("undefined");
   });
 
   test("homepage не містить raw 'null' у видимому контенті", async ({ page }) => {
     await page.goto("/");
     await page.waitForLoadState("networkidle");
-    // Get visible text (excluding hidden elements)
-    const visible = page.locator("body");
-    const text = await visible.textContent();
-    // 'null' might appear in JSON, but not in plain text
-    const hasLiteralNull = (text || "").split(" ").includes("null");
+    // innerText returns only rendered visible text — no <script>/<style> noise.
+    const mainText = await page.locator("main").innerText();
+    const hasLiteralNull = mainText.split(/\s+/).includes("null");
     expect(hasLiteralNull).toBe(false);
   });
 
@@ -307,8 +308,12 @@ test.describe("Navbar branding — логотип та назва платфор
 
   authTest("navbar не показує raw 'undefined' для логотипу", async ({ tenantPage }) => {
     await tenantPage.goto("/welcome");
-    const bodyText = await tenantPage.locator("body").textContent();
-    expect(bodyText).not.toContain("undefined");
+    // Scope to visible nav/header and use innerText to exclude inline <script>
+    // RSC payload which legitimately contains `$undefined` tokens.
+    const nav = tenantPage.locator("nav, header").first();
+    await nav.waitFor({ state: "visible", timeout: 8_000 });
+    const navText = await nav.innerText();
+    expect(navText).not.toContain("undefined");
   });
 
   authTest("navbar містить посилання на /welcome", async ({ tenantPage }) => {
