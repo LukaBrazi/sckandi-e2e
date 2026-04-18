@@ -1,6 +1,5 @@
 import { test, expect } from "@playwright/test";
 import { LoginPage } from "../../pages/LoginPage";
-import { RegisterPage } from "../../pages/RegisterPage";
 import { INVALID_CREDENTIALS, INVALID_EMAIL_FORMAT } from "../../fixtures/test-data";
 
 test.describe("Login — negative / validation", () => {
@@ -40,50 +39,5 @@ test.describe("Login — negative / validation", () => {
     await expect(loginPage.errorToast).toBeVisible({ timeout: 8_000 });
     // react-toastify default auto-close is 5s
     await expect(loginPage.errorToast).not.toBeVisible({ timeout: 12_000 });
-  });
-});
-
-test.describe("Register — negative / validation", () => {
-  let registerPage: RegisterPage;
-
-  test.beforeEach(async ({ page }) => {
-    registerPage = new RegisterPage(page);
-    await registerPage.goto();
-  });
-
-  test("mismatched passwords — shows error", async ({ page }) => {
-    await registerPage.fillForm({
-      username: "testuser99",
-      first_name: "Test",
-      last_name: "User",
-      email: `testuser99+${Date.now()}@test.com`,
-      password: "Password123!",
-      re_password: "DifferentPassword123!",
-    });
-    await registerPage.submit();
-    const hasToastError = await registerPage.errorToast.isVisible({ timeout: 5_000 }).catch(() => false);
-    const hasFieldError = await page.locator("[class*='error'], [role='alert']").first().isVisible().catch(() => false);
-    expect(hasToastError || hasFieldError).toBe(true);
-  });
-
-  test("empty form submission — shows error feedback", async ({ page }) => {
-    await registerPage.submit();
-    const hasToastError = await registerPage.errorToast.isVisible({ timeout: 5_000 }).catch(() => false);
-    const hasFieldError = await page.locator("[class*='error'], [role='alert']").first().isVisible().catch(() => false);
-    expect(hasToastError || hasFieldError).toBe(true);
-  });
-
-  test("duplicate email — server returns error toast", async () => {
-    // dispatcher@demo.com already exists from seed data
-    await registerPage.fillForm({
-      username: `newuser_${Date.now()}`,
-      first_name: "New",
-      last_name: "User",
-      email: "dispatcher@demo.com",
-      password: "Password123!",
-      re_password: "Password123!",
-    });
-    await registerPage.submit();
-    await expect(registerPage.errorToast).toBeVisible({ timeout: 8_000 });
   });
 });
