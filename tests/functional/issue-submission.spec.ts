@@ -26,10 +26,9 @@ authTest.describe("Подача заявки через /report-issue", () => {
     "sidebar nav link 'Подати заявку' navigates to /report-issue",
     async ({ tenantPage }) => {
       await tenantPage.goto("/welcome");
-      await tenantPage
-        .getByRole("link", { name: /Подати заявку/i })
-        .first()
-        .click();
+      const navLink = tenantPage.getByRole("link", { name: /Подати заявку/i }).first();
+      await navLink.waitFor({ state: "visible", timeout: 10_000 });
+      await navLink.click();
       await expect(tenantPage).toHaveURL(/\/report-issue/, { timeout: 10_000 });
     },
   );

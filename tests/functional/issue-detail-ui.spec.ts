@@ -15,8 +15,11 @@ authTest.describe("Сторінка деталей заявки — UI", () => {
     "unassigned issue shows 'Не призначено' (not 'Not assigned Yet!')",
     async ({ resident1Page }) => {
       // Navigate to profile → my issues tab → click first issue
-      await resident1Page.goto("/profile?tab=my-issues");
+      await resident1Page.goto("/profile");
       await expect(resident1Page).toHaveURL(/\/profile/);
+
+      // Click the "Мої заявки" tab explicitly (Radix Tabs ignores ?tab= query param)
+      await resident1Page.getByRole("tab", { name: /Мої заявки/i }).click();
 
       // Wait for the my-issues tab panel to be active
       const tabPanel = resident1Page.locator(
@@ -49,8 +52,11 @@ authTest.describe("Сторінка деталей заявки — UI", () => {
     "issue detail shows Ukrainian status badge (not raw English)",
     async ({ resident1Page }) => {
       // Navigate to profile → my issues tab
-      await resident1Page.goto("/profile?tab=my-issues");
+      await resident1Page.goto("/profile");
       await expect(resident1Page).toHaveURL(/\/profile/);
+
+      // Click the "Мої заявки" tab explicitly (Radix Tabs ignores ?tab= query param)
+      await resident1Page.getByRole("tab", { name: /Мої заявки/i }).click();
 
       // Wait for tab panel to be active
       const tabPanel = resident1Page.locator(
@@ -91,8 +97,11 @@ authTest.describe("Сторінка деталей заявки — UI", () => {
     "resident sees status label but NOT priority label on issue detail",
     async ({ resident1Page }) => {
       // Navigate to profile → my issues tab
-      await resident1Page.goto("/profile?tab=my-issues");
+      await resident1Page.goto("/profile");
       await expect(resident1Page).toHaveURL(/\/profile/);
+
+      // Click the "Мої заявки" tab explicitly (Radix Tabs ignores ?tab= query param)
+      await resident1Page.getByRole("tab", { name: /Мої заявки/i }).click();
 
       // Wait for tab panel to be active
       const tabPanel = resident1Page.locator(
