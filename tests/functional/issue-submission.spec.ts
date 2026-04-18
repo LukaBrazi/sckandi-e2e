@@ -34,8 +34,11 @@ authTest.describe("Подача заявки через /report-issue", () => {
   );
 
   authTest(
-    "tenant fills and submits issue form — expects success toast or redirect to /profile",
+    "tenant fills and submits issue form — no apartment error, expects success",
     async ({ tenantPage }) => {
+      // Regression: apartmentApiSlice was calling /apartments/my-apartments/ (404)
+      // causing every tenant to see "Спочатку додайте квартиру" even with an apartment linked.
+      // Fixed by changing to /apartments/my-apartment/ (singular).
       await tenantPage.goto("/report-issue");
       await expect(tenantPage).toHaveURL(/\/report-issue/, { timeout: 10_000 });
 
@@ -50,33 +53,23 @@ authTest.describe("Подача заявки через /report-issue", () => {
         .getByRole("button", { name: /Подати заявку/i })
         .click();
 
-      // Expect either:
-      // a) "Спочатку додайте квартиру" toast (if tenant has no linked apartment — still passes the spec structurally)
-      // b) Success toast + redirect to /profile
-      // c) Redirect to /profile after submission
-      const apartmentError = await tenantPage
-        .getByText(/Спочатку додайте квартиру/i)
-        .isVisible({ timeout: 5_000 })
+      // Must NOT show the "no apartment" error — that was the pre-fix regression symptom.
+      await expect(
+        tenantPage.getByText(/Спочатку додайте квартиру/i),
+      ).not.toBeVisible({ timeout: 5_000 });
+
+      // Success path: toast appears or user is redirected to /profile
+      const successToast = await tenantPage
+        .locator(".Toastify__toast--success")
+        .isVisible({ timeout: 10_000 })
         .catch(() => false);
 
-      if (apartmentError) {
-        // Seeded tenant has no apartment assigned — this is acceptable for this env
-        // The form correctly validates and shows the error; test passes.
-        expect(apartmentError).toBe(true);
-      } else {
-        // Success path: toast appears and user is redirected to /profile
-        const successToast = await tenantPage
-          .locator(".Toastify__toast--success")
-          .isVisible({ timeout: 10_000 })
-          .catch(() => false);
+      const redirectedToProfile = await tenantPage
+        .waitForURL(/\/profile/, { timeout: 10_000 })
+        .then(() => true)
+        .catch(() => false);
 
-        const redirectedToProfile = await tenantPage
-          .waitForURL(/\/profile/, { timeout: 10_000 })
-          .then(() => true)
-          .catch(() => false);
-
-        expect(successToast || redirectedToProfile).toBe(true);
-      }
+      expect(successToast || redirectedToProfile).toBe(true);
     },
   );
 });
