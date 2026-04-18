@@ -10,6 +10,8 @@ authTest.describe("Tenants page — staff (dispatcher)", () => {
   authTest.beforeEach(async ({ staffPage }) => {
     tenantsPage = new TenantsPage(staffPage);
     await tenantsPage.goto();
+    // Wait for staff-only content to fully render (profile fetch + TenantCard mount)
+    await tenantsPage.heading.waitFor({ state: "visible", timeout: 15_000 });
   });
 
   authTest("page loads at /tenants", async ({ staffPage }) => {
@@ -37,16 +39,17 @@ authTest.describe("Tenants page — staff (dispatcher)", () => {
 
   authTest("search filters results", async ({ staffPage }) => {
     await tenantsPage.searchInput.fill("dispatcher");
-    // Wait for debounced search to update
-    await staffPage.waitForTimeout(600);
+    // Wait for API response (debounce + network)
+    await staffPage.waitForTimeout(1_500);
     const rows = await tenantsPage.tableRows.count();
     authTest.expect(rows).toBeGreaterThanOrEqual(1);
   });
 
   authTest("search with no match shows empty state", async ({ staffPage }) => {
     await tenantsPage.searchInput.fill("zzz_no_match_xyz_99999");
-    await staffPage.waitForTimeout(600);
+    // Wait for API response (debounce + network)
+    await staffPage.waitForTimeout(1_500);
     const emptyText = staffPage.getByText(/не знайдено|no results/i);
-    await expect(emptyText).toBeVisible({ timeout: 5_000 });
+    await expect(emptyText).toBeVisible({ timeout: 8_000 });
   });
 });

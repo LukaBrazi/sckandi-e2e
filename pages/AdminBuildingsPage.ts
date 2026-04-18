@@ -42,6 +42,15 @@ export class AdminBuildingsPage extends BasePage {
     return this.page.getByText(name, { exact: false });
   }
 
+  get tableSearchInput() {
+    return this.page.locator('input[placeholder*="Пошук будинків"]');
+  }
+
+  async searchInTable(text: string) {
+    await this.tableSearchInput.fill(text);
+    await this.page.waitForTimeout(400);
+  }
+
   async createBuilding(name: string, address: string, city: string) {
     await this.addButton.click();
     await this.nameInput.fill(name);
