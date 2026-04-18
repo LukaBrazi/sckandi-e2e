@@ -37,11 +37,13 @@ authTest.describe("Адмін створює робітника → робітн
       // Expect success toast
       await expect(workersPage.successToast).toBeVisible({ timeout: 8_000 });
 
-      // Wait for table to refresh
-      await staffPage.waitForTimeout(1_000);
+      // Search in DataTable to handle pagination (pageSize=10)
+      await workersPage.searchInTable(`${newWorker.firstName} ${newWorker.lastName}`);
 
-      // Verify worker appears in list
-      const workerEntry = workersPage.workerInList(newWorker.firstName);
+      // Verify worker appears in filtered list
+      const workerEntry = workersPage.workerInList(
+        `${newWorker.firstName} ${newWorker.lastName}`,
+      );
       await expect(workerEntry).toBeVisible({ timeout: 10_000 });
     },
   );

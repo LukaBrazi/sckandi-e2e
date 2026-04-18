@@ -37,7 +37,10 @@ authTest.describe("Адмін створює мешканця → мешкане
       // Expect success toast
       await expect(residentsPage.successToast).toBeVisible({ timeout: 8_000 });
 
-      // Wait for the new resident to appear in the list (use full name to avoid strict-mode clash)
+      // Search in DataTable to handle pagination (pageSize=10)
+      await residentsPage.searchInTable(`${newResident.firstName} ${newResident.lastName}`);
+
+      // Wait for the new resident to appear in the filtered list
       const residentEntry = residentsPage.residentInList(
         `${newResident.firstName} ${newResident.lastName}`,
       );
