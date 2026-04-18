@@ -19,10 +19,10 @@ export class HomePage extends BasePage {
   }
 
   get ctaLink() {
-    return this.page.getByRole("link", { name: /Створити акаунт/i });
+    return this.page.getByRole("link", { name: /Увійти/i });
   }
 
   get quickLinks() {
-    return this.page.locator("main a").filter({ hasNotText: /Створити акаунт/i });
+    return this.page.locator("main a").filter({ hasNotText: /Увійти/i });
   }
 }
