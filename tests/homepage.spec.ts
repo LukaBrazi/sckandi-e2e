@@ -22,7 +22,6 @@ test.describe("Homepage", () => {
     await expect(homePage.ctaLink).toBeVisible();
   });
 
-  // REMOVED: self-registration disabled by design — CTA now leads to /login
   test("CTA navigates to login page", async ({ page }) => {
     await homePage.ctaLink.click();
     await expect(page).toHaveURL(/\/login/);

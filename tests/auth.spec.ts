@@ -21,9 +21,6 @@ test.describe("Login page", () => {
     await expect(loginPage.submitButton).toBeVisible();
   });
 
-  // REMOVED: self-registration disabled by design
-  // test("has link to register page", ...)
-
   test("has forgot password link", async () => {
     await expect(loginPage.forgotPasswordLink).toBeVisible();
   });
@@ -33,6 +30,3 @@ test.describe("Login page", () => {
     await expect(loginPage.errorToast).toBeVisible({ timeout: 8_000 });
   });
 });
-
-// REMOVED: self-registration disabled by design
-// test.describe("Register page", ...)

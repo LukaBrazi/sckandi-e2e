@@ -19,16 +19,12 @@ export class LoginPage extends BasePage {
   }
 
   get submitButton() {
-    // scoped to form to avoid matching navbar/OAuth "Увійти" buttons
+    // scoped to form to avoid matching navbar "Увійти" buttons
     return this.page.locator("form").getByRole("button", { name: "Увійти" });
   }
 
   get forgotPasswordLink() {
     return this.page.getByRole("link", { name: /Забули пароль/i });
-  }
-
-  get registerLink() {
-    return this.page.getByRole("link", { name: /Зареєструватися/i });
   }
 
   async login(email: string, password: string) {
