@@ -3,7 +3,7 @@ export const TEST_USERS = {
     email: process.env.TEST_DISPATCHER_EMAIL ?? "dispatcher@demo.com",
     password: process.env.TEST_DISPATCHER_PASSWORD ?? "Demo1234!",
     username: "dispatcher",
-    fullName: "Олена Коваль",
+    fullName: "Тетяна Романенко",
     isStaff: true,
   },
   tenant: {

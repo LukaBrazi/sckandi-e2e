@@ -40,8 +40,10 @@ authTest.describe("Адмін створює робітника → робітн
       // Wait for table to refresh
       await staffPage.waitForTimeout(1_000);
 
-      // Verify worker appears in list
-      const workerEntry = workersPage.workerInList(newWorker.firstName);
+      // Verify worker appears in list — use full name to avoid strict mode with seed data
+      const workerEntry = workersPage.workerInList(
+        `${newWorker.firstName} ${newWorker.lastName}`,
+      );
       await expect(workerEntry).toBeVisible({ timeout: 10_000 });
     },
   );

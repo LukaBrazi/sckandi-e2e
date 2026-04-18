@@ -1,6 +1,5 @@
 import { test, expect } from "@playwright/test";
 import { LoginPage } from "../../pages/LoginPage";
-import { RegisterPage } from "../../pages/RegisterPage";
 import { INVALID_CREDENTIALS, INVALID_EMAIL_FORMAT } from "../../fixtures/test-data";
 
 test.describe("Login — negative / validation", () => {
@@ -61,8 +60,15 @@ test.describe("Register — negative / validation", () => {
       re_password: "DifferentPassword123!",
     });
     await registerPage.submit();
-    const hasToastError = await registerPage.errorToast.isVisible({ timeout: 5_000 }).catch(() => false);
-    const hasFieldError = await page.locator("[class*='error'], [role='alert']").first().isVisible().catch(() => false);
+    const hasToastError = await registerPage.errorToast
+      .isVisible({ timeout: 5_000 })
+      .catch(() => false);
+    // react-hook-form Zod refine errors render as text-red-500 field messages (not [role=alert])
+    const hasFieldError = await page
+      .locator("[class*='error'], [role='alert'], .text-red-500")
+      .first()
+      .isVisible({ timeout: 5_000 })
+      .catch(() => false);
     expect(hasToastError || hasFieldError).toBe(true);
   });
 

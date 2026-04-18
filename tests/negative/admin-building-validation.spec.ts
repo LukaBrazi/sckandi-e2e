@@ -48,8 +48,8 @@ authTest.describe("Адмін створює будівлю — валідаці
   authTest(
     "duplicate building name — shows Ukrainian error toast",
     async ({ staffPage }) => {
-      // ЖК Сонячний exists from seed data
-      await buildingsPage.nameInput.fill("ЖК Сонячний");
+      // Корпус А «Норд» exists from seed data
+      await buildingsPage.nameInput.fill("Корпус А «Норд»");
       await buildingsPage.addressInput.fill("вул. Тестова, 99");
       await buildingsPage.cityInput.fill("Київ");
       await buildingsPage.saveButton.click();
