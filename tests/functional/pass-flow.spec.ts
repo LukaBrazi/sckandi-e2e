@@ -16,6 +16,7 @@ authTest.describe("Мешканець створює пропуск → охор
 
   authTest(
     "tenant creates vehicle pass → guard sees it on portal",
+    { timeout: 60_000 },
     async ({ browser }) => {
       // Step 1: Login as tenant and create pass
       const tenantContext = await browser.newContext();

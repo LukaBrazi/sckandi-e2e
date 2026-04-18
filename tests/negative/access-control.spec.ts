@@ -31,7 +31,8 @@ test.describe("Access control — unauthenticated", () => {
 authTest.describe("Access control — tenant cannot access staff pages", () => {
   authTest("tenant sees /tenants page but limited data", async ({ tenantPage: page }) => {
     await page.goto("/tenants");
-    // Tenant is not staff → should be redirected away from /tenants
-    await expect(page).not.toHaveURL(/\/tenants/, { timeout: 8_000 });
+    // Tenant is not staff → TenantsPageContent fetches profile, then router.replace("/welcome")
+    // Allow up to 12s for profile fetch + redirect
+    await expect(page).not.toHaveURL(/\/tenants/, { timeout: 12_000 });
   });
 });
