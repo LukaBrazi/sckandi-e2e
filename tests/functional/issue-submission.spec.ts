@@ -3,7 +3,8 @@ import { expect } from "@playwright/test";
 
 // Requires seed data: make seed (or make e2e-full / make e2e-dev)
 // Tests issue submission via /report-issue for tenant@demo.com.
-// The tenant seeded by seed_demo has an apartment linked, so the form should submit successfully.
+// seed_demo binds tenant@demo.com to a valid demo unit, so the form
+// submits successfully.
 
 authTest.describe("Подача заявки через /report-issue", () => {
   authTest(
@@ -65,8 +66,9 @@ authTest.describe("Подача заявки через /report-issue", () => {
         .then(() => true)
         .catch(() => false);
 
+      // Client-side router.push — no "load" event, use "commit"
       const redirectedToProfile = await tenantPage
-        .waitForURL(/\/profile/, { timeout: 10_000 })
+        .waitForURL(/\/profile/, { timeout: 10_000, waitUntil: "commit" })
         .then(() => true)
         .catch(() => false);
 

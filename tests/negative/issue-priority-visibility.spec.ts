@@ -5,9 +5,10 @@ import { expect } from "@playwright/test";
 // Verifies that a resident (non-staff) cannot see issue priority,
 // while a staff member (dispatcher) can.
 //
-// NOTE: seed_demo creates issues for resident1–resident8, NOT for tenant.
-// So we use resident1Page for profile-based tests (cards visible),
-// and tenantPage only where we navigate directly via API-fetched issue ID.
+// NOTE: seed_demo distributes 45 issues across residents (see plan §5);
+// resident1 is guaranteed to have ≥ 1 issue. Tenant@demo.com is bound to
+// a demo unit but may have fewer issues — we stay on resident1 for
+// card-visibility checks.
 
 authTest.describe("Пріоритет заявки — видимість за роллю", () => {
   authTest(
@@ -49,7 +50,8 @@ authTest.describe("Пріоритет заявки — видимість за �
       const issueLink = resident1Page.locator('[href^="/issue/"]').first();
       await issueLink.waitFor({ state: "visible", timeout: 15_000 });
       await issueLink.click();
-      await resident1Page.waitForURL(/\/issue\//, { timeout: 10_000 });
+      // Next.js <Link> uses client-side History API nav — no "load" event fires
+      await resident1Page.waitForURL(/\/issue\//, { timeout: 10_000, waitUntil: "commit" });
 
       // Wait for the issue detail card to load
       await resident1Page.locator("text=Статус:").waitFor({ state: "visible", timeout: 10_000 });

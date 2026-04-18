@@ -7,6 +7,7 @@ export default defineConfig({
   retries: process.env.CI ? 1 : 0,
   workers: process.env.CI ? 1 : undefined,
   reporter: [["list"], ["html", { open: "never" }]],
+  globalSetup: "./fixtures/global-setup.ts",
 
   use: {
     baseURL: process.env.BASE_URL ?? "http://localhost:8080",

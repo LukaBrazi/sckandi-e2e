@@ -31,9 +31,11 @@ test.describe("Access control — unauthenticated", () => {
 authTest.describe("Access control — tenant cannot access staff pages", () => {
   authTest("tenant sees /tenants page but limited data", async ({ tenantPage: page }) => {
     await page.goto("/tenants");
-    // Tenant is not staff → TenantsPageContent fetches profile, then router.replace("/welcome")
-    // Wait explicitly for the redirect, then verify URL is no longer /tenants
-    await page.waitForURL(/\/welcome/, { timeout: 20_000 });
+    // Tenant is not staff → TenantsPageContent fetches profile, then
+    // router.replace("/welcome"). This is client-side History API nav, so
+    // no fresh "load" event fires — default waitForURL (waitUntil:"load")
+    // would hang. Use "commit" which resolves on URL change.
+    await page.waitForURL(/\/welcome/, { timeout: 20_000, waitUntil: "commit" });
     await expect(page).not.toHaveURL(/\/tenants/);
   });
 });

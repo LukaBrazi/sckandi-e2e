@@ -9,6 +9,10 @@ import { expect } from "@playwright/test";
 // - Ukrainian status labels appear via StatusBadge (not raw English values)
 // - Residents see status label but NOT priority label
 // - Staff (dispatcher) DO see priority on issue detail
+//
+// After the seed_demo rewrite (2026-04-18), the DB always has 45 seed
+// issues with variety across statuses + priorities, so resident1 and
+// dispatcher sessions both see non-empty lists.
 
 authTest.describe("Сторінка деталей заявки — UI", () => {
   authTest(
@@ -33,7 +37,7 @@ authTest.describe("Сторінка деталей заявки — UI", () => {
       await issueLink.click();
 
       // Wait for navigation to issue detail page
-      await resident1Page.waitForURL(/\/issue\//, { timeout: 10_000 });
+      await resident1Page.waitForURL(/\/issue\//, { timeout: 10_000, waitUntil: "commit" });
 
       // "Не призначено" should appear
       await expect(
@@ -70,7 +74,7 @@ authTest.describe("Сторінка деталей заявки — UI", () => {
       await issueLink.click();
 
       // Wait for navigation and page load
-      await resident1Page.waitForURL(/\/issue\//, { timeout: 10_000 });
+      await resident1Page.waitForURL(/\/issue\//, { timeout: 10_000, waitUntil: "commit" });
       await resident1Page
         .locator("text=Статус:")
         .waitFor({ state: "visible", timeout: 10_000 });
@@ -115,7 +119,7 @@ authTest.describe("Сторінка деталей заявки — UI", () => {
       await issueLink.click();
 
       // Wait for navigation to issue detail page
-      await resident1Page.waitForURL(/\/issue\//, { timeout: 10_000 });
+      await resident1Page.waitForURL(/\/issue\//, { timeout: 10_000, waitUntil: "commit" });
 
       // Status label should be visible
       await expect(
@@ -145,8 +149,8 @@ authTest.describe("Сторінка деталей заявки — UI", () => {
       await firstRow.waitFor({ state: "visible", timeout: 15_000 });
       await firstRow.click();
 
-      // Wait for navigation to issue detail page
-      await staffPage.waitForURL(/\/issue\//, { timeout: 10_000 });
+      // Wait for navigation to issue detail page (client-side router — use "commit")
+      await staffPage.waitForURL(/\/issue\//, { timeout: 10_000, waitUntil: "commit" });
 
       // For staff, both status and priority should be visible
       await expect(

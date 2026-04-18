@@ -4,7 +4,7 @@ import { ReportIssuePage } from "../../pages/ReportIssuePage";
 import { AdminIssuesPage } from "../../pages/AdminIssuesPage";
 
 // Requires seed data: make seed
-// resident1 has an apartment linked in seed data
+// resident1 has an apartment linked in seed data (bound by seed_demo).
 
 authTest.describe("Мешканець створює заявку → відображається в адмін панелі", () => {
   authTest.setTimeout(60_000);
@@ -13,12 +13,13 @@ authTest.describe("Мешканець створює заявку → відоб
   authTest(
     "tenant creates issue → issue appears in admin panel",
     async ({ browser }) => {
+      const { TEST_USERS } = await import("../../fixtures/test-data");
+
       // Step 1: Login as resident1 (has apartment) and create issue
       const tenantContext = await browser.newContext();
       const tenantPage = await tenantContext.newPage();
 
       const { LoginPage } = await import("../../pages/LoginPage");
-      const { TEST_USERS } = await import("../../fixtures/test-data");
 
       const loginPage = new LoginPage(tenantPage);
       await loginPage.goto();
@@ -43,8 +44,9 @@ authTest.describe("Мешканець створює заявку → відоб
         .waitFor({ state: "visible", timeout: 10_000 })
         .then(() => true)
         .catch(() => false);
+      // Client-side router.push — no "load" event, use "commit"
       const redirected = await tenantPage
-        .waitForURL(/\/profile/, { timeout: 10_000 })
+        .waitForURL(/\/profile/, { timeout: 10_000, waitUntil: "commit" })
         .then(() => true)
         .catch(() => false);
 

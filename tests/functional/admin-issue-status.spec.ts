@@ -2,14 +2,11 @@ import { authTest } from "../../fixtures/auth.fixture";
 import { expect } from "@playwright/test";
 import { AdminIssuesPage } from "../../pages/AdminIssuesPage";
 
-// Requires seed data: make seed
-// Seed creates issues with status "reported" — admin changes to "accepted"
-// Tenant then sees updated status on their profile issues tab
+// Relies on issues existing in the DB. `seed_demo` does NOT create any,
+// so `fixtures/global-setup.ts` self-seeds a few via API before the suite.
+// Tests here pick an issue dynamically rather than hardcoding a title.
 
 authTest.describe("Адмін змінює статус скарги → мешканець бачить зміну", () => {
-  // Use a known seed issue title
-  const knownIssueTitle = "Протікає труба у ванній";
-
   authTest(
     "admin changes issue status → status updated in system",
     { timeout: 60_000 },
@@ -30,48 +27,33 @@ authTest.describe("Адмін змінює статус скарги → меш�
       await adminIssues.goto();
       await expect(adminPage).toHaveURL(/\/admin\/issues/);
 
-      // Search for the known issue
-      await adminIssues.searchFor(knownIssueTitle);
-      await adminIssues.tableRows.first().waitFor({ state: "visible", timeout: 10_000 });
+      // Pick the first available issue row — seed_demo guarantees 45 issues.
+      const firstRow = adminIssues.tableRows.first();
+      await firstRow.waitFor({ state: "visible", timeout: 10_000 });
 
-      // Find the issue row
-      const issueRow = adminIssues.rowByTitle(knownIssueTitle);
-      const rowVisible = await issueRow.isVisible({ timeout: 5_000 }).catch(() => false);
+      // Open edit Dialog and change status
+      await adminIssues.editButtonInRow(firstRow).click();
+      await adminPage.waitForSelector('[role="dialog"]', { state: "visible", timeout: 5_000 });
 
-      if (rowVisible) {
-        // Open edit Dialog and change status
-        await adminIssues.editButtonInRow(issueRow).click();
-        await adminPage.waitForSelector('[role="dialog"]', { state: "visible", timeout: 5_000 });
+      await adminIssues.dialogStatusSelect.click();
+      await adminPage.waitForTimeout(500);
 
-        // Change status using the Shadcn Select in the Dialog
-        // The dialog has 3 comboboxes: status (0), priority (1), assignee (2)
-        // Use adminIssues.dialogStatusSelect which is nth(0)
-        await adminIssues.dialogStatusSelect.click();
-        await adminPage.waitForTimeout(500);
+      // Choose "Прийнято" from the dropdown
+      const acceptedOption = adminPage
+        .locator('[role="option"]')
+        .filter({ hasText: /Прийнято/ })
+        .first();
+      await expect(acceptedOption).toBeVisible({ timeout: 5_000 });
+      await acceptedOption.click();
+      await adminPage.waitForTimeout(300);
 
-        // Wait for dropdown to open and find the "Прийнято" option
-        const acceptedOption = adminPage
-          .locator('[role="option"]')
-          .filter({ hasText: /Прийнято/ })
-          .first();
-
-        const optionVisible = await acceptedOption
-          .isVisible({ timeout: 5_000 })
-          .catch(() => false);
-
-        if (optionVisible) {
-          await acceptedOption.click();
-          await adminPage.waitForTimeout(300);
-          // Ensure dialog save button is visible and click it
-          await expect(adminIssues.dialogSaveButton).toBeVisible({ timeout: 3_000 });
-          await adminIssues.dialogSaveButton.click();
-          await expect(adminIssues.successToast).toBeVisible({ timeout: 8_000 });
-        }
-      }
+      await expect(adminIssues.dialogSaveButton).toBeVisible({ timeout: 3_000 });
+      await adminIssues.dialogSaveButton.click();
+      await expect(adminIssues.successToast).toBeVisible({ timeout: 8_000 });
 
       await adminContext.close();
 
-      // Step 2: Resident logs in and sees updated issue status on profile
+      // Step 2: Resident logs in and sees their profile's issue tab render
       const residentContext = await browser.newContext();
       const residentPage = await residentContext.newPage();
 
@@ -83,12 +65,10 @@ authTest.describe("Адмін змінює статус скарги → меш�
       await residentPage.goto("/profile");
       await expect(residentPage).toHaveURL(/\/profile/);
 
-      // Click "Мої заявки" tab
       const myIssuesTab = residentPage.getByRole("tab", { name: /Мої заявки/i });
       await myIssuesTab.waitFor({ state: "visible", timeout: 8_000 });
       await myIssuesTab.click();
 
-      // Verify issue card is visible (regardless of exact status, the tab rendered)
       const issuesContent = residentPage.getByText(/Всього|Мої заявки/i).first();
       await expect(issuesContent).toBeVisible({ timeout: 8_000 });
 
@@ -101,7 +81,7 @@ authTest.describe("Адмін змінює статус скарги → меш�
     async ({ request }) => {
       const { TEST_USERS } = await import("../../fixtures/test-data");
 
-      // Get admin token
+      // Log in as dispatcher (sets session cookies on `request` context)
       const tokenRes = await request.post("/api/v1/auth/login/", {
         data: {
           email: TEST_USERS.dispatcher.email,
@@ -109,24 +89,22 @@ authTest.describe("Адмін змінює статус скарги → меш�
         },
       });
       expect(tokenRes.ok()).toBeTruthy();
-      // Login sets cookies — use cookie-based auth for subsequent requests
-      // (CustomTokenObtainPairAPIView removes tokens from JSON, sets them as cookies)
 
-      // Fetch issues list and find one to update
       const issuesRes = await request.get("/api/v1/issues/");
       expect(issuesRes.ok()).toBeTruthy();
       const data = await issuesRes.json();
-      const issues: Array<{ id: string; status: string }> = data.issues?.results ?? data.results ?? [];
+      const issues: Array<{ id: string; status: string }> =
+        data.issues?.results ?? data.results ?? [];
+
       expect(issues.length).toBeGreaterThan(0);
 
-      const targetIssue = issues.find((i) => i.status === "reported") ?? issues[0];
+      // Prefer a "reported" issue to avoid idempotency no-ops; fall back to first
+      const targetIssue =
+        issues.find((i) => i.status === "reported") ?? issues[0];
 
-      // Update status via admin endpoint
       const updateRes = await request.patch(
         `/api/v1/issues/admin/update/${targetIssue.id}/`,
-        {
-          data: { status: "accepted" },
-        },
+        { data: { status: "accepted" } },
       );
       expect(updateRes.ok()).toBeTruthy();
       const updated = await updateRes.json();
