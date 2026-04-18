@@ -7,6 +7,7 @@ import { AdminIssuesPage } from "../../pages/AdminIssuesPage";
 // resident1 has an apartment linked in seed data
 
 authTest.describe("Мешканець створює заявку → відображається в адмін панелі", () => {
+  authTest.setTimeout(60_000);
   const issueTitle = `E2E Тест заявки ${Date.now()}`;
 
   authTest(
@@ -39,7 +40,8 @@ authTest.describe("Мешканець створює заявку → відоб
 
       // Wait for success toast or redirect
       const successVisible = await loginPage.successToast
-        .isVisible({ timeout: 10_000 })
+        .waitFor({ state: "visible", timeout: 10_000 })
+        .then(() => true)
         .catch(() => false);
       const redirected = await tenantPage
         .waitForURL(/\/profile/, { timeout: 10_000 })

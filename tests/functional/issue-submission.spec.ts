@@ -61,7 +61,8 @@ authTest.describe("Подача заявки через /report-issue", () => {
       // Success path: toast appears or user is redirected to /profile
       const successToast = await tenantPage
         .locator(".Toastify__toast--success")
-        .isVisible({ timeout: 10_000 })
+        .waitFor({ state: "visible", timeout: 10_000 })
+        .then(() => true)
         .catch(() => false);
 
       const redirectedToProfile = await tenantPage
